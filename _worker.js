@@ -459,23 +459,10 @@ const handleWebSocketConn = async (webSocket, request) => {
 };
 const xhttpResponseHeaders = {'Content-Type': 'application/octet-stream', 'X-Accel-Buffering': 'no', 'Cache-Control': 'no-store'};
 const handlePost = async (request) => {
-    const _maxChunkLen = maxChunkLen;
     const reader = request.body.getReader({mode: 'byob'});
     const state = {socks5State: 0, tcpWriter: null, tcpSocket: null};
-    let buffer = new Uint8Array(0);
-    let sessionBuffer = new ArrayBuffer(_maxChunkLen);
-    while (buffer.length === 0 || (buffer[0] === 0 && buffer.length < 6)) {
-        const {value, done} = await reader.read(new Uint8Array(sessionBuffer, 0, _maxChunkLen));
-        if (done) break;
-        const chunk = new Uint8Array(value);
-        const newBuf = new Uint8Array(buffer.length + chunk.length);
-        newBuf.set(buffer);
-        newBuf.set(chunk, buffer.length);
-        buffer = newBuf;
-        sessionBuffer = value.buffer;
-    }
-    if (buffer.length === 0) return new Response(null, {status: 200});
-    const isGrpc = buffer.length >= 6 && buffer[0] === 0 && buffer[5] === 0x0A;
+    let sessionBuffer = new ArrayBuffer(32768);
+    const isGrpc = !(request.headers.get('Referer') || '').includes('x_padding');
     const responseHeaders = new Headers(xhttpResponseHeaders);
     if (isGrpc) {
         responseHeaders.set('Content-Type', 'application/grpc');
@@ -512,50 +499,44 @@ const handlePost = async (request) => {
             };
             const close = () => {reader.releaseLock(), state.tcpSocket?.close(), controller.close()};
             try {
+                let used = 0, offset = 0;
                 if (isGrpc) {
-                    let grpcBuf = buffer;
                     while (true) {
-                        while (grpcBuf.byteLength >= 5) {
-                            const grpcLen = ((grpcBuf[1] << 24) >>> 0) | (grpcBuf[2] << 16) | (grpcBuf[3] << 8) | grpcBuf[4];
-                            if (grpcBuf.byteLength >= 5 + grpcLen) {
-                                const grpcData = grpcBuf.subarray(5, 5 + grpcLen);
-                                grpcBuf = grpcBuf.subarray(5 + grpcLen);
+                        const {done, value} = await reader.read(new Uint8Array(sessionBuffer, used, used > 0 ? 16384 : 32768));
+                        if (done) break;
+                        sessionBuffer = value.buffer;
+                        const bufToProcess = new Uint8Array(sessionBuffer, 0, used + value.byteLength), bufLen = bufToProcess.byteLength;
+                        offset = 0;
+                        while (bufLen - offset >= 5) {
+                            const grpcLen = ((bufToProcess[offset + 1] << 24) >>> 0) | (bufToProcess[offset + 2] << 16) | (bufToProcess[offset + 3] << 8) | bufToProcess[offset + 4];
+                            const frameSize = 5 + grpcLen;
+                            if (bufLen - offset >= frameSize) {
+                                const grpcData = bufToProcess.subarray(offset + 5, offset + frameSize);
+                                offset += frameSize;
                                 let p = grpcData[0] === 0x0A ? 1 : 0;
                                 while (p && grpcData[p++] & 0x80) ;
                                 const payload = p === 0 ? grpcData : grpcData.subarray(p);
                                 if (payload.length > 0) {state.tcpWriter ? state.tcpWriter(payload) : await handleSession(payload, state, request, writable, close)}
                             } else {break}
                         }
-                        const readLen = state.tcpWriter ? _maxChunkLen : 8192;
-                        const {done, value} = await reader.read(new Uint8Array(sessionBuffer, 0, readLen));
-                        if (done) break;
-                        sessionBuffer = value.buffer;
-                        const chunk = value.slice();
-                        if (grpcBuf.byteLength > 0) {
-                            const combined = new Uint8Array(grpcBuf.byteLength + chunk.byteLength);
-                            combined.set(grpcBuf);
-                            combined.set(chunk, grpcBuf.byteLength);
-                            grpcBuf = combined;
-                        } else {grpcBuf = chunk}
+                        if (offset < bufLen) {
+                            used = bufLen - offset;
+                            new Uint8Array(sessionBuffer).copyWithin(0, offset, bufLen);
+                        } else {used = 0}
                     }
                 } else {
-                    let used = buffer.length;
-                    new Uint8Array(sessionBuffer).set(buffer);
                     while (true) {
-                        if (used > 0) {
-                            const currentBuf = new Uint8Array(sessionBuffer, 0, used);
-                            if (state.tcpWriter || currentBuf[0] === 5 || state.socks5State || used >= 32) {
-                                const payload = currentBuf.slice();
-                                state.tcpWriter ? state.tcpWriter(payload) : await handleSession(payload, state, request, writable, close);
-                                used = 0;
-                            }
-                        }
-                        let offset = 0, readLen = _maxChunkLen;
-                        !state.tcpWriter && (offset = used, readLen = 8192);
-                        const {done, value} = await reader.read(new Uint8Array(sessionBuffer, offset, readLen));
+                        const redlen = state.tcpWriter ? 32768 : (offset = used, 16384);
+                        const {done, value} = await reader.read(new Uint8Array(sessionBuffer, offset, redlen));
                         if (done) break;
                         sessionBuffer = value.buffer;
                         used += value.byteLength;
+                        const currentBuf = new Uint8Array(sessionBuffer, 0, used);
+                        if (state.tcpWriter || currentBuf[0] === 5 || state.socks5State || used >= 32) {
+                            const payload = currentBuf.subarray();
+                            state.tcpWriter ? state.tcpWriter(payload) : await handleSession(payload, state, request, writable, close);
+                            used = 0;
+                        }
                     }
                 }
             } finally {close()}
