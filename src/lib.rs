@@ -107,14 +107,14 @@ static TEMPLATES: [&[u8]; 12] = [
     b"vless://{{UUID}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&path={{PATH}}&encryption=none&security=tls&fp=chrome&allowInsecure=0&type=ws&ech=cloudflare-ech.com%2Bhttps%3A%2F%2F223.5.5.5%2Fdns-query&alpn=h2&insecure=0#[ECH]-ws-vless-{{IP}}",
     b"vless://{{UUID}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&path={{PATH}}&encryption=none&security=tls&fp=chrome&alpn=h2&type=xhttp&headerType=none&mode=stream-one#xhttp-vless-{{IP}}",
     b"vless://{{UUID}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&path={{PATH}}&encryption=none&security=tls&fp=chrome&type=xhttp&headerType=none&ech=cloudflare-ech.com%2Bhttps%3A%2F%2F223.5.5.5%2Fdns-query&alpn=h2&insecure=0&mode=stream-one#[ECH]-xhttp-vless-{{IP}}",
-    b"vless://{{UUID}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&serviceName={{PATH}}&encryption=none&security=tls&fp=chrome&alpn=h2&type=grpc&mode=multi&insecure=1&allowInsecure=0#grpc-vless-{{IP}}",
-    b"vless://{{UUID}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&serviceName={{PATH}}&encryption=none&security=tls&fp=chrome&alpn=h2&type=grpc&mode=multi&ech=cloudflare-ech.com%2Bhttps%3A%2F%2F223.5.5.5%2Fdns-query&allowInsecure=0&insecure=0#[ECH]-grpc-vless-{{IP}}",
+    b"vless://{{UUID}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&serviceName={{PATH}}&encryption=none&security=tls&fp=chrome&alpn=h2&type=grpc&mode=gun&insecure=1&allowInsecure=0#grpc-vless-{{IP}}",
+    b"vless://{{UUID}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&serviceName={{PATH}}&encryption=none&security=tls&fp=chrome&alpn=h2&type=grpc&mode=gun&ech=cloudflare-ech.com%2Bhttps%3A%2F%2F223.5.5.5%2Fdns-query&allowInsecure=0&insecure=0#[ECH]-grpc-vless-{{IP}}",
     b"trojan://{{PASSWORD}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&path={{PATH}}&security=tls&fp=chrome&alpn=http%2F1.1&insecure=1&allowInsecure=0&type=ws#ws-trojan-{{IP}}",
     b"trojan://{{PASSWORD}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&path={{PATH}}&security=tls&fp=chrome&allowInsecure=0&type=ws&ech=cloudflare-ech.com%2Bhttps%3A%2F%2F223.5.5.5%2Fdns-query&alpn=h2&insecure=0#[ECH]-ws-trojan-{{IP}}",
     b"trojan://{{PASSWORD}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&path={{PATH}}&encryption=none&security=tls&fp=chrome&alpn=h2&type=xhttp&headerType=none&mode=stream-one#xhttp-trojan-{{IP}}",
     b"trojan://{{PASSWORD}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&path={{PATH}}&encryption=none&security=tls&fp=chrome&type=xhttp&headerType=none&ech=cloudflare-ech.com%2Bhttps%3A%2F%2F223.5.5.5%2Fdns-query&alpn=h2&insecure=0&mode=stream-one#[ECH]-xhttp-trojan-{{IP}}",
-    b"trojan://{{PASSWORD}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&serviceName={{PATH}}&security=tls&fp=chrome&alpn=h2&type=grpc&mode=multi&insecure=1&allowInsecure=0#grpc-trojan-{{IP}}",
-    b"trojan://{{PASSWORD}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&serviceName={{PATH}}&security=tls&fp=chrome&alpn=h2&type=grpc&mode=multi&ech=cloudflare-ech.com%2Bhttps%3A%2F%2F223.5.5.5%2Fdns-query&allowInsecure=0&insecure=0#[ECH]-grpc-trojan-{{IP}}",
+    b"trojan://{{PASSWORD}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&serviceName={{PATH}}&security=tls&fp=chrome&alpn=h2&type=grpc&mode=gun&insecure=1&allowInsecure=0#grpc-trojan-{{IP}}",
+    b"trojan://{{PASSWORD}}@{{IP}}:443?sni={{HOST}}&host={{HOST}}&serviceName={{PATH}}&security=tls&fp=chrome&alpn=h2&type=grpc&mode=gun&ech=cloudflare-ech.com%2Bhttps%3A%2F%2F223.5.5.5%2Fdns-query&allowInsecure=0&insecure=0#[ECH]-grpc-trojan-{{IP}}",
 ];
 
 #[no_mangle]
