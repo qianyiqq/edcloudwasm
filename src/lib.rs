@@ -68,11 +68,6 @@ pub unsafe extern "C" fn getSocks5AuthPtr() -> *const u8 {
     core::ptr::addr_of!(SOCKS5_AUTH) as *const u8
 }
 #[no_mangle]
-pub unsafe extern "C" fn getHashPtr() -> *const u8 {
-    core::ptr::addr_of!(HASH) as *const u8
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn getPanelHtmlPtr() -> *const u8 {
     PANEL_HTML.as_ptr()
 }
