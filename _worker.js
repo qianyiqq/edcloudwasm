@@ -35,7 +35,7 @@ const dohNatEndpoints = ['https://cloudflare-dns.com/dns-query', 'https://dns.go
 const proxyIpAddrs = {EU: 'ProxyIP.DE.CMLiussss.net', AS: 'ProxyIP.SG.CMLiussss.net', JP: 'ProxyIP.JP.CMLiussss.net', US: 'ProxyIP.US.CMLiussss.net'};//分区域proxyip
 const finallyProxyHost = 'ProxyIP.CMLiussss.net';//兜底proxyip
 // 订阅和面板使用的优选ip地址，可支持ip:port#name格式
-const ipListAll = ["104.18.42.218","172.64.154.125","104.18.33.131","172.64.145.202","172.64.145.38","104.18.42.151","104.18.34.254","172.64.145.18","104.18.39.123","172.64.153.2"];
+const ipListAll = ["172.64.154.125","104.18.39.123","172.64.145.18","104.18.42.218","104.18.33.131","172.64.145.38","172.64.145.202","104.18.42.151"];
 const coloRegions = {
     JP: new Set(['FUK', 'ICN', 'KIX', 'NRT', 'OKA']),
     EU: new Set([
@@ -537,8 +537,8 @@ const establishTcpConnection = async (parsedRequest, request) => {
             wasmMem.set(urlBytes, dataPtr);
             parseUrlWasm(urlBytes.length);
             const r = wasmRes;
-            const s5Val = getUrlParam(r[13], r[14]), httpVal = getUrlParam(r[15], r[16]), nat64Val = getUrlParam(r[17], r[18]), turnVal = getUrlParam(r[22], r[23]), ipVal = getUrlParam(r[19], r[20]);
-            const proxyAll = r[21] === 1;
+            const s5Val = getUrlParam(r[15], r[16]), httpVal = getUrlParam(r[17], r[18]), nat64Val = getUrlParam(r[19], r[20]), turnVal = getUrlParam(r[24], r[25]), ipVal = getUrlParam(r[21], r[22]);
+            const proxyAll = r[23] === 1;
             !proxyAll && list.push({type: 0});
             const add = (v, t) => {
                 if (!v) return;
@@ -616,8 +616,9 @@ const handleSession = async (chunk, state, request, writable, close) => {
             state.socks5State = nextState;
             return;
         }
-        return close();
+        return r[14] === 1 ? (state.needMore = true) : close();
     }
+    state.needMore = false;
     const parsedRequest = {addrType: r[5], port: r[6], dataOffset: r[7], isDns: r[8] === 1, addrBytes: chunk.subarray(r[9], r[9] + r[10]), isHttp: r[11] === 3};
     const payload = chunk.subarray(parsedRequest.dataOffset);
     if (parsedRequest.isDns) {
@@ -712,28 +713,22 @@ const handleGrpcPost = async (request, reader, buffer, used) => {
     }), {headers: grpcHeaders});
 };
 const handleXhttpPost = async (request, reader, xhttpBuffer, used) => {
-    const state = {socks5State: 0, tcpWriter: null, tcpSocket: null};
+    const state = {socks5State: 0, tcpWriter: null, tcpSocket: null, needMore: false};
     return new Response(new ReadableStream({
         start(controller) {
             const writable = {send: (chunk) => controller.enqueue(chunk)};
             const close = () => {reader.releaseLock(), state.tcpSocket?.close(), controller.close()};
             (async () => {
-                let offset = 0;
                 while (true) {
                     if (used > 0) {
                         const payload = new Uint8Array(xhttpBuffer, 0, used);
-                        if (state.tcpWriter) {
-                            state.tcpWriter(payload);
-                            used = 0;
-                            continue;
-                        } else if (payload[0] === 5 || state.socks5State || used >= 32) {
-                            await handleSession(payload, state, request, writable, close);
+                        state.tcpWriter ? state.tcpWriter(payload) : (state.needMore = false, await handleSession(payload, state, request, writable, close));
+                        if (!state.needMore) {
                             used = 0;
                             continue;
                         }
                     }
-                    offset = used;
-                    const {done, value} = await reader.read(new Uint8Array(xhttpBuffer, offset, offset === 0 ? 8192 : 4096));
+                    const {done, value} = await reader.read(new Uint8Array(xhttpBuffer, used, used === 0 ? 8192 : 4096));
                     if (done) break;
                     xhttpBuffer = value.buffer;
                     used += value.byteLength;
