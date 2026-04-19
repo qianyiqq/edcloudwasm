@@ -1,4 +1,4 @@
-name = "edcloudwasm"
+name = "zj"
 main = "_worker.js"  # 你的 JS 逻辑代码
 compatibility_date = "2026-04-18"
 
@@ -6,16 +6,14 @@ compatibility_date = "2026-04-18"
 # --- worker环境变量配置 ---
 [vars]
 # VLESS 的 UUID
-UUID = "d342d11e-d424-4583-b36e-524ab1f0afa4"
+UUID = "87d1c971-b415-4e3f-b422-52c227f6fc2f"
 # Trojan 的密码
-PASSWORD = "666"
+PASSWORD = "qianyipdc"
 # S5和HTTP 入站验证用户名 
 S5HTTPUSER = "admin"
 # S5和HTTP入站验证密码
 S5HTTPPASS = "123456"
-# 付费worker 可设置cpu时间限制
-[limits]
-cpu_ms = 300000
+
 
 [observability]
 enabled = false
